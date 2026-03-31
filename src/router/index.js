@@ -1,32 +1,47 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import LoginWrapper from '../views/LoginWrapper.vue'
+import MainWrapper from '../views/MainWrapper.vue'
 import KasetsuModule from '../views/KasetsuModule.vue'
 import OctoModule from '../views/OctoModule.vue'
 import InventoryModule from '../views/InventoryModule.vue'
 
+// 检查登录状态
+const checkAuth = () => localStorage.getItem('isLoggedIn') === 'true'
+
 const routes = [
   {
     path: '/',
-    redirect: '/kasetsu'
+    redirect: () => checkAuth() ? '/kasetsu' : '/Lamp'
   },
   {
     path: '/Lamp',
     name: 'Login',
-    component: { template: '<div></div>' }
+    component: LoginWrapper,
+    beforeEnter: (to, from, next) => {
+      if (checkAuth()) {
+        next('/kasetsu')
+      } else {
+        next()
+      }
+    }
   },
   {
     path: '/kasetsu',
-    name: 'Kasetsu',
-    component: KasetsuModule
+    component: MainWrapper,
+    beforeEnter: (to, from, next) => checkAuth() ? next() : next('/Lamp'),
+    children: [{ path: '', component: KasetsuModule }]
   },
   {
     path: '/octo',
-    name: 'Octo',
-    component: OctoModule
+    component: MainWrapper,
+    beforeEnter: (to, from, next) => checkAuth() ? next() : next('/Lamp'),
+    children: [{ path: '', component: OctoModule }]
   },
   {
     path: '/inventory',
-    name: 'Inventory',
-    component: InventoryModule
+    component: MainWrapper,
+    beforeEnter: (to, from, next) => checkAuth() ? next() : next('/Lamp'),
+    children: [{ path: '', component: InventoryModule }]
   }
 ]
 

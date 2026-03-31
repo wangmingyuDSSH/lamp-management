@@ -83,12 +83,6 @@ watch(() => route.path, (newPath) => {
   }
 }, { immediate: true })
 
-onMounted(() => {
-  if (route.path === '/') {
-    router.push('/kasetsu')
-  }
-})
-
 
 </script>
 
