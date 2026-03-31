@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  lamp-management:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lamp-management-system
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    
+    # 如需环境变量可在此配置
+    # environment:
+    #   - NODE_ENV=production
