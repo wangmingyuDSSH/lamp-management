@@ -9,6 +9,11 @@ const routes = [
     redirect: '/kasetsu'
   },
   {
+    path: '/Lamp',
+    name: 'Login',
+    component: { template: '<div></div>' }
+  },
+  {
     path: '/kasetsu',
     name: 'Kasetsu',
     component: KasetsuModule
