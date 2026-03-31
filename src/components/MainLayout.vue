@@ -88,6 +88,8 @@ onMounted(() => {
     router.push('/kasetsu')
   }
 })
+
+
 </script>
 
 <style scoped>
