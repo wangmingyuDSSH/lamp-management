@@ -41,8 +41,9 @@
               >
                 <td class="font-mono">{{ slip.no }} </td>
                 <td class="text-center">
-                  <i v-if="slip.picking" class="fas fa-check-circle text-green-500"></i>
-                  <i v-else class="far fa-circle text-slate-400"></i>
+                  <span :class="['picking-status', `status-${slip.picking}`]">
+                    {{ pickingLabel(slip.picking) }}
+                  </span>
                 </td>
                 <td>{{ slip.vehicleType }}</td>
                 <td class="font-mono">{{ slip.plateNumber }}</td>
@@ -262,7 +263,7 @@ const selectedItemUnit = computed(() => selectedItem.value?.unit || '')
 const slipList = ref([
   {
     no: 'A1S124339',
-    picking: true,
+    picking: 'yes',
     vehicleType: '6U',
     plateNumber: '1234',
     carrier: 'A会社',
@@ -276,7 +277,7 @@ const slipList = ref([
   },
   {
     no: 'A1N163386',
-    picking: false,
+    picking: 'no',
     vehicleType: '8U',
     plateNumber: '1234',
     carrier: 'A会社',
@@ -284,6 +285,18 @@ const slipList = ref([
     stopDate: '',
     customer: 'アルインコ',
     site: 'テスト現場',
+    items: []
+  },
+  {
+    no: 'A1S124340',
+    picking: 'na',
+    vehicleType: '4U',
+    plateNumber: '5678',
+    carrier: 'B会社',
+    driver: '△△商事',
+    stopDate: '',
+    customer: '△△建設',
+    site: '△△現場',
     items: []
   }
 ])
@@ -310,6 +323,15 @@ const filteredItems = computed(() => {
     item.name.toLowerCase().includes(searchTerm)
   )
 })
+
+const pickingLabel = (status) => {
+  const labels = {
+    'yes': '〇',
+    'no': '×',
+    'na': 'ー'
+  }
+  return labels[status] || 'ー'
+}
 
 const selectSlip = (slip) => {
   selectedSlip.value = slip
@@ -706,6 +728,26 @@ const openCamera = () => {
 }
 
 .text-slate-400 {
+  color: #94a3b8;
+}
+
+/* 小出し状態表示 - シンプル文字表示 */
+.picking-status {
+  font-weight: 600;
+  font-size: 1.1rem;
+  user-select: none;
+  cursor: default;
+}
+
+.picking-status.status-yes {
+  color: #059669;
+}
+
+.picking-status.status-no {
+  color: #dc2626;
+}
+
+.picking-status.status-na {
   color: #94a3b8;
 }
 
