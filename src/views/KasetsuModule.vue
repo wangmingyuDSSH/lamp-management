@@ -86,6 +86,8 @@
         <UninspectedScreen v-if="currentScreen === 'uninspected'" />
         <ShipmentListScreen v-if="currentScreen === 'shipmentList'" />
         <ReceiptListScreen v-if="currentScreen === 'receiptList'" />
+        <ExitRegistrationScreen v-if="currentScreen === 'exitRegistration'" />
+        <EntryExitRecordScreen v-if="currentScreen === 'entryExitRecord'" />
       </div>
     </main>
   </div>
@@ -104,6 +106,8 @@ import MaintenanceScreen from '../components/kasetsu/MaintenanceScreen.vue'
 import UninspectedScreen from '../components/kasetsu/UninspectedScreen.vue'
 import ShipmentListScreen from '../components/kasetsu/ShipmentListScreen.vue'
 import ReceiptListScreen from '../components/kasetsu/ReceiptListScreen.vue'
+import ExitRegistrationScreen from '../components/kasetsu/ExitRegistrationScreen.vue'
+import EntryExitRecordScreen from '../components/kasetsu/EntryExitRecordScreen.vue'
 
 const showToast = inject('showToast')
 const emit = defineEmits(['logout'])
@@ -115,12 +119,13 @@ const receptionMenu = [
   { id: 'reception', name: 'センター入場受付', icon: 'fas fa-clipboard-check' },
   { id: 'receptionCorrect', name: '受付情報訂正', icon: 'fas fa-edit' },
   { id: 'truckMaster', name: 'トラックIDメンテ', icon: 'fas fa-truck' },
-  { id: 'carrierMaster', name: '運送会社メンテ', icon: 'fas fa-building' }
+  { id: 'carrierMaster', name: '運送会社メンテ', icon: 'fas fa-building' },
+  { id: 'exitRegistration', name: 'センター退場登録', icon: 'fas fa-sign-out-alt' }
 ]
 
 const workMenu = [
   { id: 'picking', name: '小出し処理', icon: 'fas fa-dolly' },
-  { id: 'shipment', name: '出荷/入荷処理', icon: 'fas fa-shipping-fast' },
+  { id: 'shipment', name: '出荷処理', icon: 'fas fa-shipping-fast' },
   { id: 'receipt', name: '入荷/検収処理', icon: 'fas fa-clipboard-list' },
   { id: 'maintenance', name: '整備振替処理', icon: 'fas fa-tools' },
   { id: 'uninspected', name: '未検収一覧', icon: 'fas fa-exclamation-circle' }
@@ -128,7 +133,8 @@ const workMenu = [
 
 const inquiryMenu = [
   { id: 'shipmentList', name: '出荷伝票照会', icon: 'fas fa-list-alt' },
-  { id: 'receiptList', name: '入荷伝票照会', icon: 'fas fa-list' }
+  { id: 'receiptList', name: '入荷伝票照会', icon: 'fas fa-list' },
+  { id: 'entryExitRecord', name: '入退場記録照会', icon: 'fas fa-history' }
 ]
 
 const screens = {
@@ -136,13 +142,15 @@ const screens = {
   receptionCorrect: { title: '受付情報訂正', subtitle: '受付情報の訂正を行います', id: 'DISP810' },
   truckMaster: { title: 'トラックIDメンテナンス', subtitle: 'トラック情報の管理', id: 'DISP820' },
   carrierMaster: { title: '運送会社メンテナンス', subtitle: '運送会社の表示設定', id: 'DISP830' },
+  exitRegistration: { title: 'センター退場登録', subtitle: '運送業者の退場登録を行います', id: 'DISP850' },
   picking: { title: '小出し処理', subtitle: 'ピッキング作業を行います', id: 'DISP100' },
-  shipment: { title: '出荷/入荷処理', subtitle: '出荷・入荷実績の登録', id: 'DISP200/701' },
+  shipment: { title: '出荷処理', subtitle: '出荷実績の登録', id: 'DISP200/701' },
   receipt: { title: '入荷/検収処理', subtitle: '入荷検収作業を行います', id: 'DISP200' },
   maintenance: { title: '整備振替処理', subtitle: '整備振替の入力・照会', id: 'DISP840' },
   uninspected: { title: '未検収一覧', subtitle: '未検収伝票の一覧表示', id: 'DISP920' },
   shipmentList: { title: '出荷伝票照会', subtitle: '出荷実績の検索・照会', id: 'DISP900' },
-  receiptList: { title: '入荷伝票照会', subtitle: '入荷実績の検索・照会', id: 'DISP910' }
+  receiptList: { title: '入荷伝票照会', subtitle: '入荷実績の検索・照会', id: 'DISP910' },
+  entryExitRecord: { title: '入退場記録照会', subtitle: '入退場記録の検索・照会・CSV出力', id: 'DISP860' }
 }
 
 const currentTitle = computed(() => screens[currentScreen.value]?.title || '')

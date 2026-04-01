@@ -61,6 +61,7 @@
               <th>受付</th>
               <th>入場時間</th>
               <th>退場時間</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -68,16 +69,35 @@
               v-for="shipment in filteredShipments" 
               :key="shipment.no"
               class="hover-row"
-              @click="openDetailModal(shipment)"
             >
-              <td class="font-mono text-blue-600 underline">{{ shipment.no }}</td>
-              <td>{{ shipment.date }}</td>
-              <td class="whitespace-pre-line">{{ shipment.customer }}</td>
-              <td>{{ shipment.site }}</td>
-              <td>{{ shipment.carrier }}</td>
-              <td>{{ shipment.reception }}</td>
-              <td>{{ shipment.entryTime }}</td>
-              <td>{{ shipment.exitTime }}</td>
+              <td class="font-mono text-blue-600 underline cursor-pointer" @click="openDetailModal(shipment)">{{ shipment.no }}</td>
+              <td @click="openDetailModal(shipment)">{{ shipment.date }}</td>
+              <td class="whitespace-pre-line" @click="openDetailModal(shipment)">{{ shipment.customer }}</td>
+              <td @click="openDetailModal(shipment)">{{ shipment.site }}</td>
+              <td @click="openDetailModal(shipment)">{{ shipment.carrier }}</td>
+              <td @click="openDetailModal(shipment)">{{ shipment.reception }}</td>
+              <td @click="openDetailModal(shipment)">{{ shipment.entryTime }}</td>
+              <td @click="openDetailModal(shipment)">{{ shipment.exitTime }}</td>
+              <td class="action-cell">
+                <div class="action-buttons">
+                  <button 
+                    class="btn-action btn-guide" 
+                    @click.stop="openGuideModal(shipment)"
+                    title="出荷案内発行"
+                  >
+                    <i class="fas fa-file-invoice"></i>
+                    <span class="btn-label">案内</span>
+                  </button>
+                  <button 
+                    class="btn-action btn-delivery" 
+                    @click.stop="openDeliveryModal(shipment)"
+                    title="納品書発行"
+                  >
+                    <i class="fas fa-file-signature"></i>
+                    <span class="btn-label">納品書</span>
+                  </button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -266,6 +286,320 @@
         </div>
       </div>
     </div>
+
+    <!-- 出荷案内発行モーダル -->
+    <div v-if="showGuideModal" class="modal-overlay active" @click.self="closeGuideModal">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h3><i class="fas fa-file-invoice mr-2"></i>出荷案内発行</h3>
+          <button class="modal-close" @click="closeGuideModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="guide-info">
+            <div class="guide-header">
+              <div class="guide-no">
+                出荷No: <span class="font-mono font-bold">{{ guideShipment?.no }}</span>
+              </div>
+              <div class="guide-date">発行日: {{ today }}</div>
+            </div>
+
+            <!-- ドキュメント種別選択 -->
+            <div class="guide-section">
+              <h4>発行する書類を選択</h4>
+              <div class="document-type-selector">
+                <div 
+                  v-for="type in documentTypes" 
+                  :key="type.id"
+                  :class="['document-type-card', { active: guideForm.documentType === type.id }]"
+                  @click="guideForm.documentType = type.id"
+                >
+                  <div class="document-icon">
+                    <i :class="type.icon"></i>
+                  </div>
+                  <div class="document-info">
+                    <div class="document-name">{{ type.name }}</div>
+                    <div class="document-desc">{{ type.description }}</div>
+                  </div>
+                  <div class="document-check">
+                    <i v-if="guideForm.documentType === type.id" class="fas fa-check-circle"></i>
+                    <i v-else class="far fa-circle"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 出荷案内固有の入力項目 -->
+            <div v-if="guideForm.documentType === 'guide'" class="guide-section">
+              <h4>運送情報</h4>
+              <div class="guide-info-grid">
+                <div class="guide-info-item">
+                  <span class="label">運送会社:</span>
+                  <span class="value">{{ guideShipment?.carrier }}</span>
+                </div>
+                <div class="guide-info-item">
+                  <span class="label">運転手:</span>
+                  <span class="value">{{ guideShipment?.driver || '未定' }}</span>
+                </div>
+                <div class="guide-info-item">
+                  <span class="label">出荷日:</span>
+                  <span class="value">{{ guideShipment?.date }}</span>
+                </div>
+                <div class="guide-info-item">
+                  <span class="label">到着予定:</span>
+                  <span class="value">
+                    <input type="time" v-model="guideForm.arrivalTime" class="time-input">
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 受領書固有の入力項目 -->
+            <div v-if="guideForm.documentType === 'receipt'" class="guide-section">
+              <h4>受領情報</h4>
+              <div class="guide-info-grid">
+                <div class="guide-info-item">
+                  <span class="label">受領日:</span>
+                  <span class="value">
+                    <input type="date" v-model="guideForm.receiptDate" class="date-input">
+                  </span>
+                </div>
+                <div class="guide-info-item">
+                  <span class="label">受領者名:</span>
+                  <span class="value">
+                    <input type="text" v-model="guideForm.receiptPerson" class="text-input" placeholder="受領者名を入力">
+                  </span>
+                </div>
+                <div class="guide-info-item full-width">
+                  <span class="label">受領方法:</span>
+                  <span class="value">
+                    <div class="receipt-method-options">
+                      <label class="radio-label">
+                        <input type="radio" v-model="guideForm.receiptMethod" value="signature">
+                        <span>署名受領</span>
+                      </label>
+                      <label class="radio-label">
+                        <input type="radio" v-model="guideForm.receiptMethod" value="stamp">
+                        <span>捺印受領</span>
+                      </label>
+                      <label class="radio-label">
+                        <input type="radio" v-model="guideForm.receiptMethod" value="electronic">
+                        <span>電子受領</span>
+                      </label>
+                    </div>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 出荷実績明細固有の入力項目 -->
+            <div v-if="guideForm.documentType === 'detail'" class="guide-section">
+              <h4>実績情報</h4>
+              <div class="guide-info-grid">
+                <div class="guide-info-item">
+                  <span class="label">作業開始:</span>
+                  <span class="value">{{ guideShipment?.workStartTime || '-' }}</span>
+                </div>
+                <div class="guide-info-item">
+                  <span class="label">作業終了:</span>
+                  <span class="value">{{ guideShipment?.workEndTime || '-' }}</span>
+                </div>
+                <div class="guide-info-item full-width">
+                  <label class="checkbox-label">
+                    <input type="checkbox" v-model="guideForm.includePhotos">
+                    <span>荷姿写真を含める</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 共通情報 -->
+            <div class="guide-section">
+              <h4>得意先・現場情報</h4>
+              <div class="guide-info-grid">
+                <div class="guide-info-item">
+                  <span class="label">得意先:</span>
+                  <span class="value">{{ guideShipment?.customer?.replace(/\n.*/, '') }}</span>
+                </div>
+                <div class="guide-info-item">
+                  <span class="label">現場名:</span>
+                  <span class="value">{{ guideShipment?.site }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 出荷明細（出荷案内・実績明細用） -->
+            <div v-if="guideForm.documentType !== 'receipt'" class="guide-section">
+              <h4>出荷明細</h4>
+              <div class="guide-items-table">
+                <table class="detail-table">
+                  <thead>
+                    <tr>
+                      <th>No.</th>
+                      <th>品番</th>
+                      <th>品名</th>
+                      <th class="text-right">指示数</th>
+                      <th v-if="guideForm.documentType === 'detail'" class="text-right">出荷数</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(item, idx) in guideShipment?.items || []" :key="idx">
+                      <td>{{ idx + 1 }}</td>
+                      <td class="font-mono">{{ item.code }}</td>
+                      <td>{{ item.name }}</td>
+                      <td class="text-right">{{ item.orderQty }}</td>
+                      <td v-if="guideForm.documentType === 'detail'" class="text-right">
+                        {{ item.shipmentQty || item.orderQty }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 備考 -->
+            <div class="guide-remarks">
+              <label>{{ documentRemarksLabel }}</label>
+              <textarea 
+                v-model="guideForm.remarks" 
+                rows="3" 
+                class="form-textarea"
+                :placeholder="documentRemarksPlaceholder"
+              ></textarea>
+            </div>
+
+            <div class="guide-preview-notice">
+              <i class="fas fa-info-circle mr-2"></i>
+              プレビュー表示後、印刷またはPDF出力が可能です
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="closeGuideModal">キャンセル</button>
+          <button class="btn-preview" @click="previewGuide">
+            <i class="fas fa-eye mr-2"></i>{{ previewButtonLabel }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 納品書発行モーダル -->
+    <div v-if="showDeliveryModal" class="modal-overlay active" @click.self="closeDeliveryModal">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h3><i class="fas fa-file-signature mr-2"></i>納品書発行</h3>
+          <button class="modal-close" @click="closeDeliveryModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="delivery-info">
+            <div class="delivery-header">
+              <div class="delivery-no">
+                出荷No: <span class="font-mono font-bold">{{ deliveryShipment?.no }}</span>
+              </div>
+              <div class="delivery-status">
+                <span :class="['status-badge', deliveryShipment?.exitTime ? 'status-completed' : 'status-pending']">
+                  {{ deliveryShipment?.exitTime ? '退場済' : '出荷中' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="delivery-section">
+              <h4>納品書種別</h4>
+              <div class="delivery-type-group">
+                <label class="radio-label">
+                  <input type="radio" v-model="deliveryForm.type" value="standard">
+                  <span>標準納品書</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" v-model="deliveryForm.type" value="simplified">
+                  <span>簡易納品書</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" v-model="deliveryForm.type" value="return">
+                  <span>返品納品書</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="delivery-section">
+              <h4>納品情報</h4>
+              <div class="delivery-info-grid">
+                <div class="delivery-info-item">
+                  <span class="label">納品先:</span>
+                  <span class="value">{{ deliveryShipment?.site }}</span>
+                </div>
+                <div class="delivery-info-item">
+                  <span class="label">得意先:</span>
+                  <span class="value">{{ deliveryShipment?.customer?.replace(/\n.*/, '') }}</span>
+                </div>
+                <div class="delivery-info-item">
+                  <span class="label">納品日:</span>
+                  <span class="value">
+                    <input type="date" v-model="deliveryForm.deliveryDate" class="date-input">
+                  </span>
+                </div>
+                <div class="delivery-info-item">
+                  <span class="label">受領確認:</span>
+                  <span class="value">
+                    <label class="checkbox-label">
+                      <input type="checkbox" v-model="deliveryForm.receiptConfirmed">
+                      <span>受領書を添付</span>
+                    </label>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="delivery-section">
+              <h4>明細一覧</h4>
+              <table class="delivery-items-table">
+                <thead>
+                  <tr>
+                    <th>No.</th>
+                    <th>品番</th>
+                    <th>品名</th>
+                    <th class="text-right">出荷数</th>
+                    <th class="text-right">納品数</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, idx) in deliveryShipment?.items || []" :key="idx">
+                    <td>{{ idx + 1 }}</td>
+                    <td class="font-mono">{{ item.code }}</td>
+                    <td>{{ item.name }}</td>
+                    <td class="text-right">{{ item.orderQty }}</td>
+                    <td class="text-right">
+                      <input 
+                        type="number" 
+                        v-model="item.deliveryQty" 
+                        class="qty-input"
+                        :max="item.orderQty"
+                        min="0"
+                      >
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="delivery-remarks">
+              <label>納品書備考</label>
+              <textarea 
+                v-model="deliveryForm.remarks" 
+                rows="2" 
+                class="form-textarea"
+                placeholder="納品書に記載する備考を入力"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="closeDeliveryModal">キャンセル</button>
+          <button class="btn-save" @click="issueDeliveryNote">
+            <i class="fas fa-print mr-2"></i>納品書発行
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -392,7 +726,11 @@ const filteredShipments = computed(() => {
 
 const showDetailModal = ref(false)
 const showPackingModal = ref(false)
+const showGuideModal = ref(false)
+const showDeliveryModal = ref(false)
 const currentShipment = ref(null)
+const guideShipment = ref(null)
+const deliveryShipment = ref(null)
 
 // 荷姿確認用データ
 const packingChecks = ref({
@@ -403,6 +741,79 @@ const packingChecks = ref({
 const packingRemarks = ref('')
 const packingPhotos = ref(['', '', ''])
 const packingDateTime = ref('')
+
+// 出荷案内用データ
+const guideForm = ref({
+  documentType: 'guide',
+  arrivalTime: '',
+  receiptDate: new Date().toISOString().split('T')[0],
+  receiptPerson: '',
+  receiptMethod: 'signature',
+  includePhotos: false,
+  remarks: ''
+})
+const today = computed(() => {
+  const now = new Date()
+  return `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`
+})
+
+// ドキュメント種別定義
+const documentTypes = [
+  {
+    id: 'guide',
+    name: '出荷案内',
+    description: '運送業者向けの出荷案内書',
+    icon: 'fas fa-file-alt'
+  },
+  {
+    id: 'receipt',
+    name: '受領書',
+    description: '得意先からの受領確認書',
+    icon: 'fas fa-file-signature'
+  },
+  {
+    id: 'detail',
+    name: '出荷実績明細',
+    description: '出荷実績の詳細リスト',
+    icon: 'fas fa-list-alt'
+  }
+]
+
+// ドキュメント種別に応じたラベル
+const documentRemarksLabel = computed(() => {
+  const labels = {
+    guide: '案内書備考',
+    receipt: '受領書備考',
+    detail: '明細書備考'
+  }
+  return labels[guideForm.value.documentType] || '備考'
+})
+
+const documentRemarksPlaceholder = computed(() => {
+  const placeholders = {
+    guide: '案内書に記載する備考を入力',
+    receipt: '受領書に記載する備考を入力',
+    detail: '明細書に記載する備考を入力'
+  }
+  return placeholders[guideForm.value.documentType] || '備考を入力'
+})
+
+const previewButtonLabel = computed(() => {
+  const labels = {
+    guide: '出荷案内プレビュー',
+    receipt: '受領書プレビュー',
+    detail: '実績明細プレビュー'
+  }
+  return labels[guideForm.value.documentType] || 'プレビュー'
+})
+
+// 納品書用データ
+const deliveryForm = ref({
+  type: 'standard',
+  deliveryDate: new Date().toISOString().split('T')[0],
+  receiptConfirmed: false,
+  remarks: ''
+})
 
 // 現在日時をフォーマット
 const getCurrentDateTime = () => {
@@ -488,6 +899,80 @@ const savePackingCheck = () => {
   
   showToast('荷姿確認を保存しました')
   closePackingModal()
+}
+
+// 出荷案内発行関連
+const openGuideModal = (shipment) => {
+  guideShipment.value = shipment
+  guideForm.value = {
+    documentType: 'guide',
+    arrivalTime: '',
+    receiptDate: new Date().toISOString().split('T')[0],
+    receiptPerson: '',
+    receiptMethod: 'signature',
+    includePhotos: false,
+    remarks: ''
+  }
+  showGuideModal.value = true
+}
+
+const closeGuideModal = () => {
+  showGuideModal.value = false
+  guideShipment.value = null
+}
+
+const previewGuide = () => {
+  const docType = guideForm.value.documentType
+  const docNames = {
+    guide: '出荷案内書',
+    receipt: '受領書',
+    detail: '出荷実績明細書'
+  }
+  showToast(`${docNames[docType]}をプレビュー表示しました`)
+  // 実際の実装では印刷ダイアログやPDF出力機能を呼び出す
+  setTimeout(() => {
+    showToast('印刷ダイアログを表示しました')
+  }, 500)
+}
+
+// 納品書発行関連
+const openDeliveryModal = (shipment) => {
+  deliveryShipment.value = shipment
+  // 納品数の初期値を設定
+  if (shipment.items) {
+    shipment.items.forEach(item => {
+      if (!item.deliveryQty) {
+        item.deliveryQty = item.orderQty
+      }
+    })
+  }
+  deliveryForm.value = {
+    type: 'standard',
+    deliveryDate: new Date().toISOString().split('T')[0],
+    receiptConfirmed: false,
+    remarks: ''
+  }
+  showDeliveryModal.value = true
+}
+
+const closeDeliveryModal = () => {
+  showDeliveryModal.value = false
+  deliveryShipment.value = null
+}
+
+const issueDeliveryNote = () => {
+  // 納品数のバリデーション
+  if (deliveryShipment.value?.items) {
+    for (const item of deliveryShipment.value.items) {
+      if (item.deliveryQty > item.orderQty) {
+        showToast(`品番 ${item.code} の納品数が出荷数を超えています`, 'error')
+        return
+      }
+    }
+  }
+  
+  showToast(`納品書を発行しました（種別: ${deliveryForm.value.type === 'standard' ? '標準' : deliveryForm.value.type === 'simplified' ? '簡易' : '返品'}）`)
+  closeDeliveryModal()
 }
 
 const exportCSV = () => {
@@ -1047,6 +1532,466 @@ const goToPage = (page) => {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* 操作ボタン */
+.action-cell {
+  white-space: nowrap;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-action {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-guide {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-guide:hover {
+  background: #bfdbfe;
+}
+
+.btn-delivery {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.btn-delivery:hover {
+  background: #bbf7d0;
+}
+
+.btn-label {
+  font-size: 0.65rem;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* 出荷案内モーダル */
+.guide-info {
+  padding: 16px;
+}
+
+.guide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.guide-no {
+  font-size: 0.875rem;
+}
+
+.guide-date {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.guide-section {
+  margin-bottom: 20px;
+}
+
+.guide-section h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 12px;
+  padding-left: 8px;
+  border-left: 3px solid #3b82f6;
+}
+
+.guide-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.guide-info-item {
+  display: flex;
+  gap: 8px;
+}
+
+.guide-info-item .label {
+  font-size: 0.75rem;
+  color: #64748b;
+  min-width: 70px;
+}
+
+.guide-info-item .value {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.guide-items {
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.guide-item {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.75rem;
+}
+
+.guide-item:last-child {
+  border-bottom: none;
+}
+
+.guide-item .item-no {
+  color: #64748b;
+  min-width: 24px;
+}
+
+.guide-item .item-code {
+  font-family: monospace;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.guide-item .item-name {
+  flex: 1;
+}
+
+.guide-item .item-qty {
+  font-weight: 500;
+  color: #3b82f6;
+}
+
+.guide-remarks {
+  margin-top: 16px;
+}
+
+.guide-remarks label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.guide-preview-notice {
+  margin-top: 16px;
+  padding: 12px;
+  background: #eff6ff;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  color: #1e40af;
+  text-align: center;
+}
+
+.time-input {
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.btn-preview {
+  padding: 8px 20px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-preview:hover {
+  background: #2563eb;
+}
+
+/* ドキュメント種別選択器 */
+.document-type-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.document-type-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.document-type-card:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.document-type-card.active {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.document-icon {
+  width: 48px;
+  height: 48px;
+  background: white;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #3b82f6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.document-type-card.active .document-icon {
+  background: #3b82f6;
+  color: white;
+}
+
+.document-info {
+  flex: 1;
+}
+
+.document-name {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.document-desc {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.document-check {
+  font-size: 1.25rem;
+  color: #cbd5e1;
+}
+
+.document-type-card.active .document-check {
+  color: #3b82f6;
+}
+
+.guide-info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.receipt-method-options {
+  display: flex;
+  gap: 16px;
+}
+
+.text-input {
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  width: 100%;
+}
+
+.guide-items-table {
+  overflow-x: auto;
+}
+
+/* 納品書モーダル */
+.delivery-info {
+  padding: 16px;
+}
+
+.delivery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.delivery-no {
+  font-size: 0.875rem;
+}
+
+.delivery-section {
+  margin-bottom: 20px;
+}
+
+.delivery-section h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 12px;
+  padding-left: 8px;
+  border-left: 3px solid #10b981;
+}
+
+.delivery-type-group {
+  display: flex;
+  gap: 16px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.radio-label input {
+  cursor: pointer;
+}
+
+.delivery-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.delivery-info-item {
+  display: flex;
+  gap: 8px;
+}
+
+.delivery-info-item .label {
+  font-size: 0.75rem;
+  color: #64748b;
+  min-width: 70px;
+}
+
+.delivery-info-item .value {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.delivery-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.delivery-items-table th,
+.delivery-items-table td {
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.delivery-items-table th {
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.status-completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.date-input {
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.delivery-remarks {
+  margin-top: 16px;
+}
+
+.delivery-remarks label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .btn-action {
+    padding: 6px;
+  }
+  
+  .btn-label {
+    display: none;
+  }
+  
+  .guide-info-grid,
+  .delivery-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .document-type-card {
+    padding: 12px;
+  }
+  
+  .document-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+  }
+  
+  .receipt-method-options {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .document-type-card {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .document-check {
+    display: none;
   }
 }
 </style>

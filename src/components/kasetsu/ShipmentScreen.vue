@@ -2,22 +2,11 @@
   <div class="shipment-screen">
     <div class="screen-card">
       <div class="card-header">
-        <h3><i class="fas fa-shipping-fast mr-2"></i>出荷/入荷処理</h3>
+        <h3><i class="fas fa-shipping-fast mr-2"></i>出荷処理</h3>
       </div>
 
       <!-- 伝票選択 -->
       <div class="slip-selection">
-        <div class="slip-type">
-          <label class="radio-label">
-            <input type="radio" v-model="slipType" value="shipment" class="radio-input">
-            <span>出荷伝票</span>
-          </label>
-          <label class="radio-label">
-            <input type="radio" v-model="slipType" value="receipt" class="radio-input">
-            <span>入荷伝票</span>
-          </label>
-        </div>
-
         <div class="slip-table">
           <table class="data-table">
             <thead>
@@ -95,6 +84,79 @@
               <span class="info-value text-blue-600 font-bold">{{ totalWeight.toLocaleString() }} Kg</span>
             </div>
           </div>
+
+          <!-- 運賃情報 -->
+          <div class="freight-section mt-3">
+            <div class="freight-header">
+              <i class="fas fa-yen-sign mr-2"></i>運賃情報
+              <span v-if="freightRegistered" class="freight-registered-badge">
+                <i class="fas fa-check-circle mr-1"></i>登録済
+              </span>
+            </div>
+            <div class="freight-grid">
+              <div class="freight-field">
+                <label>運賃予定額</label>
+                <div class="freight-input-group">
+                  <input 
+                    type="number" 
+                    v-model="freight.amount" 
+                    class="freight-input" 
+                    placeholder="0"
+                    :disabled="freightRegistered"
+                  >
+                  <span class="freight-unit">円</span>
+                </div>
+              </div>
+              <div class="freight-field">
+                <label>高速代</label>
+                <div class="freight-input-group">
+                  <input 
+                    type="number" 
+                    v-model="freight.highway" 
+                    class="freight-input" 
+                    placeholder="0"
+                    :disabled="freightRegistered"
+                  >
+                  <span class="freight-unit">円</span>
+                </div>
+              </div>
+              <div class="freight-field">
+                <label>その他費用</label>
+                <div class="freight-input-group">
+                  <input 
+                    type="number" 
+                    v-model="freight.other" 
+                    class="freight-input" 
+                    placeholder="0"
+                    :disabled="freightRegistered"
+                  >
+                  <span class="freight-unit">円</span>
+                </div>
+              </div>
+              <div class="freight-field freight-total">
+                <label>合計</label>
+                <div class="freight-total-value">
+                  {{ freightTotal.toLocaleString() }} <span class="unit">円</span>
+                </div>
+              </div>
+            </div>
+            <div class="freight-actions">
+              <button 
+                class="btn-freight-register" 
+                @click="registerFreight"
+                :disabled="freightRegistered || freightTotal <= 0"
+              >
+                <i class="fas fa-save mr-2"></i>運賃予定登録
+              </button>
+              <button 
+                v-if="freightRegistered" 
+                class="btn-freight-edit" 
+                @click="editFreight"
+              >
+                <i class="fas fa-edit mr-2"></i>修正
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="items-table">
@@ -107,7 +169,7 @@
                 <th>指示数</th>
                 <th>数量変更</th>
                 <th>積込完了</th>
-                <th>チェック</th>
+                <th>チェック確認</th>
 				</tr>
                </thead>
             <tbody>
@@ -118,12 +180,10 @@
                 <td class="text-right">{{ item.orderQty }}</td>
                 <td class="text-right text-red-600 font-bold">{{ item.changeQty }}</td>
                 <td class="text-center">
-                  <input type="checkbox" v-model="item.loaded" class="complete-checkbox">
+                  <input type="checkbox" v-model="item.loaded" class="complete-checkbox" :disabled="item.checked">
                 </td>
                 <td class="text-center">
-                  <button class="btn-check" @click="checkItem(item)">
-                    <i class="fas fa-check"></i>
-                  </button>
+                  <input type="checkbox" v-model="item.checked" class="complete-checkbox" :disabled="!item.loaded">
                 </td>
               </tr>
             </tbody>
@@ -255,6 +315,38 @@ const itemSearch = ref('')
 const addQty = ref(1)
 const selectedItem = ref(null)
 
+// 運賃情報
+const freight = ref({
+  amount: '',
+  highway: '',
+  other: ''
+})
+const freightRegistered = ref(false)
+
+// 運賃合計
+const freightTotal = computed(() => {
+  const amount = parseInt(freight.value.amount) || 0
+  const highway = parseInt(freight.value.highway) || 0
+  const other = parseInt(freight.value.other) || 0
+  return amount + highway + other
+})
+
+// 運賃予定登録
+const registerFreight = () => {
+  if (freightTotal.value <= 0) {
+    showToast('運賃予定額を入力してください', 'error')
+    return
+  }
+  freightRegistered.value = true
+  showToast(`運賃予定 ${freightTotal.value.toLocaleString()}円 を登録しました`)
+}
+
+// 運賃修正
+const editFreight = () => {
+  freightRegistered.value = false
+  showToast('運賃情報を修正できます')
+}
+
 // 計算プロパティで選択された品番の情報を表示
 const selectedItemCode = computed(() => selectedItem.value?.code || '')
 const selectedItemName = computed(() => selectedItem.value?.name || '')
@@ -272,7 +364,7 @@ const slipList = ref([
     customer: 'アルインコ',
     site: 'テスト現場',
     items: [
-      { code: 'HK6N', name: '鋼製布板 幅木用500X1829 橙', borrower: '', orderQty: 10, changeQty: 10, loaded: false }
+      { code: 'HK6N', name: '鋼製布板 幅木用500X1829 橙', borrower: '', orderQty: 10, changeQty: 10, loaded: false, checked: false }
     ]
   },
   {
@@ -338,29 +430,35 @@ const selectSlip = (slip) => {
   showToast(`伝票 ${slip.no} を選択しました`)
 }
 
-const checkItem = (item) => {
-  showToast(`${item.name} をチェックしました`)
-}
-
 const completeLoading = () => {
   // バリデーション：積込完了していない品目がないか確認
   const notLoadedItems = selectedSlip.value?.items.filter(item => !item.loaded) || []
   if (notLoadedItems.length > 0) {
-    if (!confirm(`${notLoadedItems.length}件の品目が未完了です。このまま完了しますか？`)) {
-      return
-    }
+    showToast(`${notLoadedItems.length}件の品目が積込完了していません`, 'error')
+    return
   }
-  showToast('積込完了しました')
+  
+  // すべて積込完了している場合
+  showToast('積込完了を確認しました。チェック確認を行ってください')
 }
 
 const completeAllWork = () => {
+  // ステップ1: 積込完了チェック
+  const notLoadedItems = selectedSlip.value?.items.filter(item => !item.loaded) || []
+  if (notLoadedItems.length > 0) {
+    showToast(`${notLoadedItems.length}件の品目が積込未完了です。先に積込完了を行ってください`, 'error')
+    return
+  }
+  
+  // ステップ2: チェック確認
+  const notCheckedItems = selectedSlip.value?.items.filter(item => !item.checked) || []
+  if (notCheckedItems.length > 0) {
+    showToast(`${notCheckedItems.length}件の品目がチェック未完了です。チェック確認を行ってください`, 'error')
+    return
+  }
+  
+  // すべて完了している場合
   if (confirm('全ての作業を完了しますか？')) {
-    // バリデーション
-    const notLoadedItems = selectedSlip.value?.items.filter(item => !item.loaded) || []
-    if (notLoadedItems.length > 0) {
-      showToast(`${notLoadedItems.length}件の品目が未完了です`)
-      return
-    }
     showToast('全ての作業が完了しました')
   }
 }
@@ -430,7 +528,8 @@ const addItem = () => {
       borrower: '',
       orderQty: addQty.value,
       changeQty: addQty.value,
-      loaded: false
+      loaded: false,
+      checked: false
     })
     showToast(`品番 ${selectedItem.value.code} を ${addQty.value} 個追加しました`)
   }
@@ -1000,6 +1099,165 @@ const openCamera = () => {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* 運賃情報セクション */
+.freight-section {
+  background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+  border: 1px solid #fde047;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.freight-header {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  color: #854d0e;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+.freight-registered-badge {
+  margin-left: auto;
+  padding: 4px 10px;
+  background: #10b981;
+  color: white;
+  font-size: 0.75rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.freight-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.freight-field label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #854d0e;
+  margin-bottom: 4px;
+}
+
+.freight-input-group {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #fde047;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.freight-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  font-size: 0.875rem;
+  text-align: right;
+}
+
+.freight-input:focus {
+  outline: none;
+}
+
+.freight-input:disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.freight-unit {
+  padding: 8px 12px;
+  background: #fef08a;
+  color: #854d0e;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.freight-total {
+  text-align: right;
+}
+
+.freight-total label {
+  color: #854d0e;
+}
+
+.freight-total-value {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #b45309;
+  padding: 6px 0;
+}
+
+.freight-total-value .unit {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.freight-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px dashed #fde047;
+}
+
+.btn-freight-register {
+  padding: 8px 20px;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-freight-register:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.btn-freight-register:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+}
+
+.btn-freight-edit {
+  padding: 8px 20px;
+  background: white;
+  color: #f59e0b;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-freight-edit:hover {
+  background: #fef3c7;
+}
+
+@media (max-width: 1024px) {
+  .freight-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .freight-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
