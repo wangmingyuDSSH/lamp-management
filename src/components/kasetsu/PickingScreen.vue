@@ -7,22 +7,55 @@
 
       <!-- ステップインジケーター -->
       <div class="step-indicator">
-        <div :class="['step', { active: currentStep === 1, completed: currentStep > 1 }]">
-          <i class="fas fa-cog"></i>
-          <span>エリア・出荷日選択</span>
+        <div :class="['step-item', { active: currentStep === 1, completed: currentStep > 1 }]">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">エリア・出荷日選択</div>
+            <div class="step-desc">小出し条件の設定</div>
+          </div>
         </div>
-        <div :class="['step', { active: currentStep === 2, completed: currentStep > 2 }]">
-          <i class="fas fa-list"></i>
-          <span>伝票一覧</span>
+        <div class="step-arrow">
+          <i class="fas fa-chevron-right"></i>
         </div>
-        <div :class="['step', { active: currentStep === 3 }]">
-          <i class="fas fa-file-alt"></i>
-          <span>明細一覧</span>
+        <div :class="['step-item', { active: currentStep === 2, completed: currentStep > 2 }]">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">伝票一覧</div>
+            <div class="step-desc">出荷伝票の選択</div>
+          </div>
+        </div>
+        <div class="step-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+        <div :class="['step-item', { active: currentStep === 3, completed: currentStep > 3 }]">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">明細一覧</div>
+            <div class="step-desc">品番明細の確認・追加</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 現在のステップ情報バー -->
+      <div class="current-step-bar">
+        <div class="step-status">
+          <span class="step-label">現在のステップ</span>
+          <span class="step-name">{{ currentStepName }}</span>
+        </div>
+        <div class="step-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: ((currentStep / 3) * 100) + '%' }"></div>
+          </div>
+          <span class="progress-text">{{ currentStep }} / 3</span>
         </div>
       </div>
 
       <!-- 第1層：エリア・出荷日選択 -->
       <div v-show="currentStep === 1" class="step-content">
+        <div class="step-content-header">
+          <div class="step-badge">STEP 1</div>
+          <h4 class="step-content-title">エリア・出荷日を選択してください</h4>
+        </div>
         <div class="form-group">
           <label>小出しエリア選択 <span class="required">*</span></label>
           <select v-model="pickingForm.area" class="form-select">
@@ -38,24 +71,27 @@
           <input type="date" v-model="pickingForm.date" class="form-input">
         </div>
         <div class="form-actions">
-          <button class="btn-primary" @click="goToStep2" :disabled="!pickingForm.area">
-            <i class="fas fa-list mr-2"></i>伝票一覧へ
+          <button class="btn-primary btn-next" @click="goToStep2" :disabled="!pickingForm.area">
+            <span>次へ：伝票一覧</span>
+            <i class="fas fa-arrow-right ml-2"></i>
           </button>
         </div>
       </div>
 
       <!-- 第2層：伝票一覧 -->
       <div v-show="currentStep === 2" class="step-content">
-        <div class="step-header">
-          <div>
-            <i class="fas fa-list mr-2"></i>小出し伝票一覧
-            <span class="info-text ml-3">
-              出荷日: {{ pickingForm.date }} | エリア: {{ selectedAreaText }}
-            </span>
-          </div>
-          <button class="btn-link" @click="goToStep1">
-            <i class="fas fa-arrow-left mr-1"></i>戻る
+        <div class="step-content-header">
+          <div class="step-badge">STEP 2</div>
+          <h4 class="step-content-title">伝票を選択してください</h4>
+          <span class="step-content-subtitle">
+            出荷日: {{ pickingForm.date }} | エリア: {{ selectedAreaText }}
+          </span>
+        </div>
+        <div class="step-nav-bar">
+          <button class="btn-nav btn-nav-back" @click="goToStep1">
+            <i class="fas fa-arrow-left mr-2"></i>ステップ1に戻る
           </button>
+          <span class="nav-text">伝票を選択して明細を表示</span>
         </div>
         <div class="slip-table">
           <table class="data-table">
@@ -91,20 +127,31 @@
             </tbody>
           </table>
         </div>
+        <div class="step-actions-footer">
+          <button class="btn-nav btn-nav-back" @click="goToStep1">
+            <i class="fas fa-arrow-left mr-2"></i>ステップ1に戻る
+          </button>
+          <span class="helper-text">
+            <i class="fas fa-info-circle mr-1"></i>
+            伝票を選択して明細を表示できます
+          </span>
+        </div>
       </div>
 
       <!-- 第3層：明細一覧 -->
       <div v-show="currentStep === 3" class="step-content">
-        <div class="step-header">
-          <div>
-            <i class="fas fa-file-alt mr-2"></i>小出し伝票明細一覧
-            <span class="info-text ml-3">
-              出荷No: {{ selectedSlip?.no }} | 得意先: {{ selectedSlip?.customer }} | 現場: {{ selectedSlip?.site }}
-            </span>
-          </div>
-          <button class="btn-link" @click="goToStep2">
-            <i class="fas fa-arrow-left mr-1"></i>戻る
+        <div class="step-content-header">
+          <div class="step-badge">STEP 3</div>
+          <h4 class="step-content-title">明細を確認・編集してください</h4>
+          <span class="step-content-subtitle">
+            出荷No: {{ selectedSlip?.no }} | 得意先: {{ selectedSlip?.customer }} | 現場: {{ selectedSlip?.site }}
+          </span>
+        </div>
+        <div class="step-nav-bar">
+          <button class="btn-nav btn-nav-back" @click="goToStep2">
+            <i class="fas fa-arrow-left mr-2"></i>ステップ2に戻る
           </button>
+          <span class="nav-text">明細の確認と小出しラベル発行</span>
         </div>
         <div class="detail-table">
           <table class="data-table">
@@ -137,15 +184,24 @@
           </table>
         </div>
         <div class="detail-actions">
-          <button class="btn-add" @click="openHinbanModal">
-            <i class="fas fa-plus mr-2"></i>品番追加
-          </button>
-          <button class="btn-label">
-            <i class="fas fa-tag mr-2"></i>小出しラベル発行
-          </button>
-          <button class="btn-complete-work">
-            <i class="fas fa-check mr-2"></i>作業完了
-          </button>
+          <div class="action-group-left">
+            <button class="btn-nav btn-nav-back" @click="goToStep2">
+              <i class="fas fa-arrow-left mr-2"></i>伝票一覧に戻る
+            </button>
+          </div>
+          <div class="action-group-center">
+            <button class="btn-add" @click="openHinbanModal">
+              <i class="fas fa-plus mr-2"></i>品番追加
+            </button>
+            <button class="btn-label">
+              <i class="fas fa-tag mr-2"></i>小出しラベル発行
+            </button>
+          </div>
+          <div class="action-group-right">
+            <button class="btn-complete-work">
+              <i class="fas fa-check mr-2"></i>作業完了
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -231,6 +287,16 @@ import { ref, computed, inject } from 'vue'
 
 const showToast = inject('showToast')
 const currentStep = ref(1)
+
+// 現在ステップの名前
+const currentStepName = computed(() => {
+  const names = {
+    1: 'エリア・出荷日選択',
+    2: '伝票一覧',
+    3: '明細一覧'
+  }
+  return names[currentStep.value] || ''
+})
 
 const pickingForm = ref({
   area: '',
@@ -403,7 +469,7 @@ const addHinban = () => {
 }
 
 .card-header {
-  padding: 16px 24px;
+  padding: 12px 20px;
   background: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
@@ -414,7 +480,7 @@ const addHinban = () => {
 .card-header h3 {
   font-weight: bold;
   color: #1e293b;
-  font-size: 1.125rem;
+  font-size: 1rem;
 }
 
 .screen-badge {
@@ -422,48 +488,253 @@ const addHinban = () => {
   color: #64748b;
 }
 
+/* ステップインジケーター - コンパクト版 */
 .step-indicator {
   display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 20px 24px;
-  background: white;
+  padding: 8px 16px;
+  background: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
 }
 
-.step {
+.step-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: #f1f5f9;
-  border-radius: 24px;
-  color: #64748b;
-  font-size: 0.875rem;
+  gap: 6px;
+  padding: 6px 10px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  min-width: auto;
+  transition: all 0.2s ease;
 }
 
-.step.active {
+.step-item.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.step-item.completed {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.step-number {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e2e8f0;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: #64748b;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.step-item.active .step-number {
   background: #3b82f6;
   color: white;
 }
 
-.step.completed {
+.step-item.completed .step-number {
   background: #10b981;
   color: white;
 }
 
 .step-content {
-  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.step-title {
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: #1e293b;
+}
+
+.step-desc {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  display: none; /* 説明を非表示にして省スペース */
+}
+
+.step-arrow {
+  color: #cbd5e1;
+  font-size: 0.75rem;
+}
+
+/* 現在のステップ情報バー - コンパクト版 */
+.current-step-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.step-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.step-name {
+  font-weight: 600;
+  color: #3b82f6;
+  font-size: 0.8rem;
+}
+
+.step-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-bar {
+  width: 80px;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.step-content {
+  padding: 16px 20px;
+}
+
+/* ステップコンテンツヘッダー - コンパクト版 */
+.step-content-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.step-badge {
+  display: inline-block;
+  width: fit-content;
+  padding: 2px 8px;
+  background: #3b82f6;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.step-content-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.step-content-subtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+  width: 100%;
+  margin-left: 44px; /* step-badge の幅分 */
+}
+
+/* ステップナビゲーションバー */
+.step-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-nav {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-nav-back {
+  background: white;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-nav-back:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.nav-text {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.step-actions-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.helper-text {
+  font-size: 0.875rem;
+  color: #94a3b8;
+}
+
+.btn-next {
+  display: inline-flex;
+  align-items: center;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-weight: 500;
   color: #1e293b;
+  font-size: 0.875rem;
 }
 
 .required {
@@ -490,18 +761,19 @@ const addHinban = () => {
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .btn-primary {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
-  padding: 10px 24px;
-  border-radius: 8px;
+  padding: 8px 20px;
+  border-radius: 6px;
   font-weight: 600;
   border: none;
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 0.875rem;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -544,26 +816,27 @@ const addHinban = () => {
 .slip-table,
 .detail-table {
   overflow-x: auto;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .data-table th {
   background: #f8fafc;
-  padding: 12px;
+  padding: 8px 10px;
   text-align: left;
   font-weight: 600;
   color: #475569;
   border-bottom: 2px solid #e2e8f0;
+  font-size: 0.75rem;
 }
 
 .data-table td {
-  padding: 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -631,18 +904,33 @@ const addHinban = () => {
 
 .detail-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 16px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid #e2e8f0;
+}
+
+.action-group-left,
+.action-group-center,
+.action-group-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.action-group-center {
+  flex: 1;
+  justify-content: center;
 }
 
 .btn-add,
 .btn-label,
 .btn-complete-work {
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s;
 }
