@@ -63,6 +63,7 @@
               <th>退場時間</th>
               <th>未検収</th>
               <th>修/能</th>
+              <th>操作</th>
              </tr>
           </thead>
           <tbody>
@@ -70,18 +71,37 @@
               v-for="receipt in filteredReceipts" 
               :key="receipt.no"
               class="hover-row"
-              @click="openDetailModal(receipt)"
             >
-              <td class="font-mono text-blue-600 underline">{{ receipt.no }}</td>
-              <td class="font-mono">{{ receipt.date }}</td>
-              <td class="whitespace-pre-line">{{ receipt.customer }}</td>
-              <td class="whitespace-pre-line">{{ receipt.site }}</td>
-              <td>{{ receipt.carrier }}</td>
-              <td>{{ receipt.reception }}</td>
-              <td>{{ receipt.entryTime }}</td>
-              <td>{{ receipt.exitTime }}</td>
-              <td class="text-red-600">{{ receipt.uninspected }}</td>
-              <td>{{ receipt.repair }}</td>
+              <td class="font-mono text-blue-600 underline cursor-pointer" @click="openDetailModal(receipt)">{{ receipt.no }}</td>
+              <td @click="openDetailModal(receipt)">{{ receipt.date }}</td>
+              <td class="whitespace-pre-line" @click="openDetailModal(receipt)">{{ receipt.customer }}</td>
+              <td class="whitespace-pre-line" @click="openDetailModal(receipt)">{{ receipt.site }}</td>
+              <td @click="openDetailModal(receipt)">{{ receipt.carrier }}</td>
+              <td @click="openDetailModal(receipt)">{{ receipt.reception }}</td>
+              <td @click="openDetailModal(receipt)">{{ receipt.entryTime }}</td>
+              <td @click="openDetailModal(receipt)">{{ receipt.exitTime }}</td>
+              <td class="text-red-600" @click="openDetailModal(receipt)">{{ receipt.uninspected }}</td>
+              <td @click="openDetailModal(receipt)">{{ receipt.repair }}</td>
+              <td class="action-cell">
+                <div class="action-buttons">
+                  <button 
+                    class="btn-action btn-inspection" 
+                    @click.stop="openInspectionModal(receipt)"
+                    title="入荷検収書発行"
+                  >
+                    <i class="fas fa-file-invoice"></i>
+                    <span class="btn-label">検収書</span>
+                  </button>
+                  <button 
+                    class="btn-action btn-receipt" 
+                    @click.stop="openReceiptModal(receipt)"
+                    title="受領書発行"
+                  >
+                    <i class="fas fa-file-signature"></i>
+                    <span class="btn-label">受領書</span>
+                  </button>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -246,6 +266,218 @@
         </div>
       </div>
     </div>
+
+    <!-- 入荷検収書発行モーダル -->
+    <div v-if="showInspectionModal" class="modal-overlay active" @click.self="closeInspectionModal">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h3><i class="fas fa-file-invoice mr-2"></i>入荷検収書発行</h3>
+          <button class="modal-close" @click="closeInspectionModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="inspection-content">
+            <div class="inspection-header">
+              <div class="header-row">
+                <span class="header-label">入荷No:</span>
+                <span class="header-value font-mono">{{ inspectionReceipt?.no }}</span>
+              </div>
+              <div class="header-row">
+                <span class="header-label">発行日:</span>
+                <span class="header-value">{{ today }}</span>
+              </div>
+            </div>
+
+            <!-- 書類種別選択 -->
+            <div class="document-type-section">
+              <h4>発行する書類</h4>
+              <div class="document-options">
+                <label class="checkbox-label">
+                  <input type="checkbox" v-model="inspectionForm.mainDocument" checked>
+                  <span>入荷検収書（原本）</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" v-model="inspectionForm.copyDocument">
+                  <span>入荷検収書（控え）</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 基本情報 -->
+            <div class="info-section">
+              <h4>基本情報</h4>
+              <div class="info-grid">
+                <div class="info-item">
+                  <span class="label">入荷日:</span>
+                  <span class="value">{{ inspectionReceipt?.date }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">得意先:</span>
+                  <span class="value">{{ inspectionReceipt?.customer }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">現場:</span>
+                  <span class="value">{{ inspectionReceipt?.site }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">運送会社:</span>
+                  <span class="value">{{ inspectionReceipt?.carrier }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 明細情報 -->
+            <div class="items-section">
+              <h4>検収明細</h4>
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th>No.</th>
+                    <th>品番</th>
+                    <th>品名</th>
+                    <th class="text-right">貸出中</th>
+                    <th class="text-right">返却数</th>
+                    <th class="text-right">不能数</th>
+                    <th class="text-right">修理数</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, idx) in inspectionReceipt?.items || []" :key="idx">
+                    <td>{{ idx + 1 }}</td>
+                    <td class="font-mono">{{ item.code }}</td>
+                    <td>{{ item.name }}</td>
+                    <td class="text-right">{{ item.loanQty }}</td>
+                    <td class="text-right">{{ item.returnQty }}</td>
+                    <td class="text-right text-red-600">{{ item.damageQty || 0 }}</td>
+                    <td class="text-right text-blue-600">{{ item.repairQty || 0 }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 備考 -->
+            <div class="remarks-section">
+              <label>検収書備考</label>
+              <textarea 
+                v-model="inspectionForm.remarks" 
+                rows="3" 
+                class="form-textarea"
+                placeholder="検収書に記載する備考を入力"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="closeInspectionModal">キャンセル</button>
+          <button class="btn-preview" @click="previewInspection">
+            <i class="fas fa-eye mr-2"></i>プレビュー
+          </button>
+          <button class="btn-save" @click="issueInspectionDocument">
+            <i class="fas fa-print mr-2"></i>発行
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 受領書発行モーダル -->
+    <div v-if="showReceiptModal" class="modal-overlay active" @click.self="closeReceiptModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3><i class="fas fa-file-signature mr-2"></i>受領書発行・配信</h3>
+          <button class="modal-close" @click="closeReceiptModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="receipt-content">
+            <div class="receipt-header">
+              <div class="header-row">
+                <span class="header-label">入荷No:</span>
+                <span class="header-value font-mono">{{ receiptDocument?.no }}</span>
+              </div>
+              <div class="header-row">
+                <span class="header-label">発行日:</span>
+                <span class="header-value">{{ today }}</span>
+              </div>
+            </div>
+
+            <!-- 配信方法選択 -->
+            <div class="delivery-method-section">
+              <h4>配信方法</h4>
+              <div class="method-options">
+                <label class="radio-label">
+                  <input type="radio" v-model="receiptForm.deliveryMethod" value="ecodelivery">
+                  <span>エコデリバー</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" v-model="receiptForm.deliveryMethod" value="email">
+                  <span>メール</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" v-model="receiptForm.deliveryMethod" value="paper">
+                  <span>紙送付</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 配信先情報 -->
+            <div class="delivery-target-section">
+              <h4>配信先情報</h4>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label>得意先名</label>
+                  <input type="text" v-model="receiptForm.customerName" class="form-input">
+                </div>
+                <div class="form-field">
+                  <label>メールアドレス</label>
+                  <input type="email" v-model="receiptForm.email" class="form-input" placeholder="example@company.com">
+                </div>
+                <div class="form-field full-width">
+                  <label>送付先住所（紙送付の場合）</label>
+                  <input type="text" v-model="receiptForm.address" class="form-input" placeholder="住所を入力">
+                </div>
+              </div>
+            </div>
+
+            <!-- 受領内容 -->
+            <div class="receipt-content-section">
+              <h4>受領内容</h4>
+              <div class="content-summary">
+                <div class="summary-item">
+                  <span class="label">入荷日:</span>
+                  <span class="value">{{ receiptDocument?.date }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="label">品目数:</span>
+                  <span class="value">{{ receiptDocument?.items?.length || 0 }} 品目</span>
+                </div>
+                <div class="summary-item">
+                  <span class="label">合計数量:</span>
+                  <span class="value">{{ totalReceiptQty }} 個</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 備考 -->
+            <div class="remarks-section">
+              <label>受領書備考</label>
+              <textarea 
+                v-model="receiptForm.remarks" 
+                rows="3" 
+                class="form-textarea"
+                placeholder="受領書に記載する備考を入力"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="closeReceiptModal">キャンセル</button>
+          <button class="btn-preview" @click="previewReceipt">
+            <i class="fas fa-eye mr-2"></i>プレビュー
+          </button>
+          <button class="btn-save" @click="issueAndDeliverReceipt">
+            <i class="fas fa-paper-plane mr-2"></i>発行・配信
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -339,7 +571,11 @@ const filteredReceipts = computed(() => {
 
 const showDetailModal = ref(false)
 const showPackingModal = ref(false)
+const showInspectionModal = ref(false)
+const showReceiptModal = ref(false)
 const currentReceipt = ref(null)
+const inspectionReceipt = ref(null)
+const receiptDocument = ref(null)
 
 // 荷姿確認用データ
 const packingChecks = ref({
@@ -350,6 +586,31 @@ const packingChecks = ref({
 const packingRemarks = ref('')
 const packingPhotos = ref(['', '', ''])
 const packingDateTime = ref('')
+
+// 入荷検収書用データ
+const inspectionForm = ref({
+  mainDocument: true,
+  copyDocument: false,
+  remarks: ''
+})
+const today = computed(() => {
+  const now = new Date()
+  return `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`
+})
+
+// 受領書用データ
+const receiptForm = ref({
+  deliveryMethod: 'ecodelivery',
+  customerName: '',
+  email: '',
+  address: '',
+  remarks: ''
+})
+
+const totalReceiptQty = computed(() => {
+  if (!receiptDocument.value?.items) return 0
+  return receiptDocument.value.items.reduce((sum, item) => sum + (item.returnQty || 0), 0)
+})
 
 // 現在日時をフォーマット
 const getCurrentDateTime = () => {
@@ -425,6 +686,66 @@ const savePackingCheck = () => {
 
 const exportCSV = () => {
   showToast('CSVダウンロードを開始しました')
+}
+
+// 入荷検収書発行関連
+const openInspectionModal = (receipt) => {
+  inspectionReceipt.value = receipt
+  inspectionForm.value = {
+    mainDocument: true,
+    copyDocument: false,
+    remarks: ''
+  }
+  showInspectionModal.value = true
+}
+
+const closeInspectionModal = () => {
+  showInspectionModal.value = false
+  inspectionReceipt.value = null
+}
+
+const previewInspection = () => {
+  showToast('入荷検収書をプレビュー表示しました')
+}
+
+const issueInspectionDocument = () => {
+  const docs = []
+  if (inspectionForm.value.mainDocument) docs.push('原本')
+  if (inspectionForm.value.copyDocument) docs.push('控え')
+  showToast(`入荷検収書（${docs.join('・')}）を発行しました`)
+  closeInspectionModal()
+}
+
+// 受領書発行関連
+const openReceiptModal = (receipt) => {
+  receiptDocument.value = receipt
+  receiptForm.value = {
+    deliveryMethod: 'ecodelivery',
+    customerName: receipt.customer || '',
+    email: '',
+    address: '',
+    remarks: ''
+  }
+  showReceiptModal.value = true
+}
+
+const closeReceiptModal = () => {
+  showReceiptModal.value = false
+  receiptDocument.value = null
+}
+
+const previewReceipt = () => {
+  showToast('受領書をプレビュー表示しました')
+}
+
+const issueAndDeliverReceipt = () => {
+  const methodLabels = {
+    ecodelivery: 'エコデリバー',
+    email: 'メール',
+    paper: '紙送付'
+  }
+  showToast(`受領書を発行し、${methodLabels[receiptForm.value.deliveryMethod]}で配信しました`)
+  closeReceiptModal()
 }
 
 const prevPage = () => {
@@ -944,6 +1265,244 @@ const goToPage = (page) => {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* 操作ボタン */
+.action-cell {
+  white-space: nowrap;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-action {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-inspection {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-inspection:hover {
+  background: #bfdbfe;
+}
+
+.btn-receipt {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.btn-receipt:hover {
+  background: #bbf7d0;
+}
+
+.btn-label {
+  font-size: 0.65rem;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* 入荷検収書モーダル */
+.inspection-content, .receipt-content {
+  padding: 20px;
+}
+
+.inspection-header, .receipt-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.header-row {
+  display: flex;
+  gap: 8px;
+}
+
+.header-label {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.header-value {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.document-type-section, .delivery-method-section, .info-section, .receipt-content-section {
+  margin-bottom: 20px;
+}
+
+.document-type-section h4, .delivery-method-section h4, .info-section h4, .items-section h4, .delivery-target-section h4, .receipt-content-section h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 12px;
+  padding-left: 8px;
+  border-left: 3px solid #3b82f6;
+}
+
+.document-options, .method-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.info-item {
+  display: flex;
+  gap: 8px;
+}
+
+.info-item .label {
+  font-size: 0.875rem;
+  color: #64748b;
+  min-width: 80px;
+}
+
+.info-item .value {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.items-table th, .items-table td {
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.items-table th {
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+.remarks-section {
+  margin-top: 20px;
+}
+
+.remarks-section label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.btn-preview {
+  padding: 8px 20px;
+  background: white;
+  color: #3b82f6;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-preview:hover {
+  background: #eff6ff;
+}
+
+/* 受領書モーダル */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.form-field label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.form-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.content-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-item .label {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.summary-item .value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .btn-action {
+    padding: 6px;
+  }
+  
+  .btn-label {
+    display: none;
+  }
+  
+  .info-grid, .form-grid, .content-summary {
+    grid-template-columns: 1fr;
   }
 }
 </style>

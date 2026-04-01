@@ -88,6 +88,7 @@
         <ReceiptListScreen v-if="currentScreen === 'receiptList'" />
         <ExitRegistrationScreen v-if="currentScreen === 'exitRegistration'" />
         <EntryExitRecordScreen v-if="currentScreen === 'entryExitRecord'" />
+        <ReceiptTransferScreen v-if="currentScreen === 'receiptTransfer'" />
       </div>
     </main>
   </div>
@@ -108,6 +109,7 @@ import ShipmentListScreen from '../components/kasetsu/ShipmentListScreen.vue'
 import ReceiptListScreen from '../components/kasetsu/ReceiptListScreen.vue'
 import ExitRegistrationScreen from '../components/kasetsu/ExitRegistrationScreen.vue'
 import EntryExitRecordScreen from '../components/kasetsu/EntryExitRecordScreen.vue'
+import ReceiptTransferScreen from '../components/kasetsu/ReceiptTransferScreen.vue'
 
 const showToast = inject('showToast')
 const emit = defineEmits(['logout'])
@@ -127,6 +129,7 @@ const workMenu = [
   { id: 'picking', name: '小出し処理', icon: 'fas fa-dolly' },
   { id: 'shipment', name: '出荷処理', icon: 'fas fa-shipping-fast' },
   { id: 'receipt', name: '入荷/検収処理', icon: 'fas fa-clipboard-list' },
+  { id: 'receiptTransfer', name: '入荷振替登録', icon: 'fas fa-exchange-alt' },
   { id: 'maintenance', name: '整備振替処理', icon: 'fas fa-tools' },
   { id: 'uninspected', name: '未検収一覧', icon: 'fas fa-exclamation-circle' }
 ]
@@ -146,6 +149,7 @@ const screens = {
   picking: { title: '小出し処理', subtitle: 'ピッキング作業を行います', id: 'DISP100' },
   shipment: { title: '出荷処理', subtitle: '出荷実績の登録', id: 'DISP200/701' },
   receipt: { title: '入荷/検収処理', subtitle: '入荷検収作業を行います', id: 'DISP200' },
+  receiptTransfer: { title: '入荷振替登録', subtitle: '入荷データの振替処理', id: 'DISP870' },
   maintenance: { title: '整備振替処理', subtitle: '整備振替の入力・照会', id: 'DISP840' },
   uninspected: { title: '未検収一覧', subtitle: '未検収伝票の一覧表示', id: 'DISP920' },
   shipmentList: { title: '出荷伝票照会', subtitle: '出荷実績の検索・照会', id: 'DISP900' },
