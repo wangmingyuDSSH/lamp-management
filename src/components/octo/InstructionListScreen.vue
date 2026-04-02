@@ -312,10 +312,10 @@
               <button class="btn-site-comment" @click="openSiteComment">
                 <i class="fas fa-comment mr-2"></i>現場コメント
               </button>
-              <button class="btn-ky-check" @click="openKYChecklist">
-                <i class="fas fa-clipboard-check mr-2"></i>KY活動
-              </button>
             </div>
+            <button class="btn-ky-activity" @click="openKYActivityModal">
+              <i class="fas fa-clipboard-check mr-2"></i>KY活動
+            </button>
           </div>
         </div>
       </div>
@@ -537,6 +537,11 @@ const openSiteComment = () => {
 // KYチェックリスト
 const openKYChecklist = () => {
   showToast('KY活動チェックリストを表示しました')
+}
+
+// KY活動（工事指示書画面右下）
+const openKYActivityModal = () => {
+  showToast('KY活動画面を表示しました')
 }
 
 // ページネーション操作
@@ -1161,6 +1166,24 @@ const goToPage = (page) => {
 
 .btn-ky-check:hover {
   background: #059669;
+}
+
+/* KY活動ボタン - 右下配置 */
+.btn-ky-activity {
+  padding: 10px 20px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+
+.btn-ky-activity:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
 }
 
 .text-right {
