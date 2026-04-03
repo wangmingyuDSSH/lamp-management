@@ -1,20 +1,61 @@
 <template>
   <div class="reception-screen">
     <div class="reception-card">
-      <!-- タブ -->
-      <div class="reception-tabs">
-        <div 
-          v-for="tab in tabs" 
-          :key="tab.id"
-          :class="['tab-btn', { active: currentTab === tab.id }]"
-          @click="switchTab(tab.id)"
-        >
-          <i :class="tab.icon"></i> {{ tab.name }}
+      <div class="card-header">
+        <h3><i class="fas fa-clipboard-check mr-2"></i>センター入場受付</h3>
+      </div>
+
+      <!-- ステップインジケーター -->
+      <div class="step-indicator">
+        <div :class="['step-item', { active: currentStep === 1, completed: currentStep > 1 }]">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">ドライバー情報</div>
+            <div class="step-desc">運送会社・車両情報</div>
+          </div>
+        </div>
+        <div class="step-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+        <div :class="['step-item', { active: currentStep === 2, completed: currentStep > 2 }]">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">現場選択</div>
+            <div class="step-desc">入出荷現場の登録</div>
+          </div>
+        </div>
+        <div class="step-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+        <div :class="['step-item', { active: currentStep === 3, completed: currentStep > 3 }]">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">入出荷情報</div>
+            <div class="step-desc">伝票検索・受付完了</div>
+          </div>
         </div>
       </div>
 
-      <!-- ドライバー情報 -->
-      <div v-show="currentTab === 'driver'" class="tab-content">
+      <!-- 現在のステップ情報バー -->
+      <div class="current-step-bar">
+        <div class="step-status">
+          <span class="step-label">現在のステップ</span>
+          <span class="step-name">{{ currentStepName }}</span>
+        </div>
+        <div class="step-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: ((currentStep / 3) * 100) + '%' }"></div>
+          </div>
+          <span class="progress-text">{{ currentStep }} / 3</span>
+        </div>
+      </div>
+
+      <!-- STEP 1: ドライバー情報 -->
+      <div v-show="currentStep === 1" class="step-content">
+        <div class="step-content-header">
+          <div class="step-badge">STEP 1</div>
+          <h4 class="step-content-title">ドライバー情報を入力してください</h4>
+        </div>
         <div class="driver-form">
           <div class="form-grid">
             <div class="form-section-left">
@@ -61,15 +102,29 @@
             </div>
           </div>
           <div class="form-actions">
-            <button class="btn-next" @click="switchTab('site')">
-              次へ <i class="fas fa-arrow-right ml-2"></i>
+            <button class="btn-primary btn-next" @click="goToStep2">
+              <span>次へ：現場選択</span>
+              <i class="fas fa-arrow-right ml-2"></i>
             </button>
           </div>
         </div>
       </div>
 
-      <!-- 現場選択 -->
-      <div v-show="currentTab === 'site'" class="tab-content">
+      <!-- STEP 2: 現場選択 -->
+      <div v-show="currentStep === 2" class="step-content">
+        <div class="step-content-header">
+          <div class="step-badge">STEP 2</div>
+          <h4 class="step-content-title">現場を選択してください</h4>
+          <span class="step-content-subtitle" v-if="driverForm.company">
+            運送会社: {{ driverForm.company }} | ドライバー: {{ driverForm.name }} | 車種: {{ driverForm.vehicleType }}
+          </span>
+        </div>
+        <div class="step-nav-bar">
+          <button class="btn-nav btn-nav-back" @click="goToStep1">
+            <i class="fas fa-arrow-left mr-2"></i>ステップ1に戻る
+          </button>
+          <span class="nav-text">入出荷を行う現場を選択してください</span>
+        </div>
         <div class="site-selector">
           <div class="site-header">
             <h3>現場選択登録</h3>
@@ -100,19 +155,33 @@
               </tbody>
             </table>
           </div>
-          <div class="form-actions between">
-            <button class="btn-back" @click="switchTab('driver')">
-              <i class="fas fa-arrow-left mr-2"></i>戻る
-            </button>
-            <button class="btn-next" @click="switchTab('slip')">
-              次へ <i class="fas fa-arrow-right ml-2"></i>
-            </button>
-          </div>
+        </div>
+        <div class="step-actions-footer">
+          <button class="btn-nav btn-nav-back" @click="goToStep1">
+            <i class="fas fa-arrow-left mr-2"></i>ステップ1に戻る
+          </button>
+          <button class="btn-primary btn-next" @click="goToStep3">
+            <span>次へ：入出荷情報</span>
+            <i class="fas fa-arrow-right ml-2"></i>
+          </button>
         </div>
       </div>
 
-      <!-- 入出荷情報 -->
-      <div v-show="currentTab === 'slip'" class="tab-content">
+      <!-- STEP 3: 入出荷情報 -->
+      <div v-show="currentStep === 3" class="step-content">
+        <div class="step-content-header">
+          <div class="step-badge">STEP 3</div>
+          <h4 class="step-content-title">入出荷情報を確認・登録してください</h4>
+          <span class="step-content-subtitle" v-if="selectedSitesText">
+            選択現場: {{ selectedSitesText }}
+          </span>
+        </div>
+        <div class="step-nav-bar">
+          <button class="btn-nav btn-nav-back" @click="goToStep2">
+            <i class="fas fa-arrow-left mr-2"></i>ステップ2に戻る
+          </button>
+          <span class="nav-text">伝票を検索して受付を完了してください</span>
+        </div>
         <div class="slip-info">
           <div class="slip-form">
             <div class="form-row">
@@ -167,13 +236,17 @@
               </tbody>
             </table>
           </div>
-          <div class="form-actions between">
-            <button class="btn-back" @click="switchTab('site')">
-              <i class="fas fa-arrow-left mr-2"></i>戻る
-            </button>
-            <button class="btn-complete" @click="completeReception">
-              <i class="fas fa-check mr-2"></i>受付完了
-            </button>
+          <div class="detail-actions">
+            <div class="action-group-left">
+              <button class="btn-nav btn-nav-back" @click="goToStep2">
+                <i class="fas fa-arrow-left mr-2"></i>現場選択に戻る
+              </button>
+            </div>
+            <div class="action-group-right">
+              <button class="btn-complete" @click="completeReception">
+                <i class="fas fa-check mr-2"></i>受付完了
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -185,13 +258,25 @@
 import { ref, computed, inject } from 'vue'
 
 const showToast = inject('showToast')
-const currentTab = ref('driver')
+const currentStep = ref(1)
 
-const tabs = [
-  { id: 'driver', name: 'ドライバー情報', icon: 'fas fa-user' },
-  { id: 'site', name: '現場選択', icon: 'fas fa-map-marker-alt' },
-  { id: 'slip', name: '入出荷情報', icon: 'fas fa-file-alt' }
-]
+// 現在ステップの名前
+const currentStepName = computed(() => {
+  const names = {
+    1: 'ドライバー情報',
+    2: '現場選択',
+    3: '入出荷情報'
+  }
+  return names[currentStep.value] || ''
+})
+
+// 選択された現場のテキスト表示
+const selectedSitesText = computed(() => {
+  const selected = sites.value.filter(site => site.selected)
+  if (selected.length === 0) return ''
+  if (selected.length === 1) return selected[0].siteName
+  return `${selected[0].siteName} ほか${selected.length - 1}件`
+})
 
 const driverForm = ref({
   company: '',
@@ -237,13 +322,23 @@ const slipList = ref([
   }
 ])
 
-const switchTab = (tab) => {
-  currentTab.value = tab
+const goToStep1 = () => {
+  currentStep.value = 1
+}
+
+const goToStep2 = () => {
+  currentStep.value = 2
+  showToast('現場選択に進みました')
+}
+
+const goToStep3 = () => {
+  currentStep.value = 3
+  showToast('入出荷情報に進みました')
 }
 
 const selectSite = (site) => {
   site.selected = !site.selected
-  showToast('現場を選択しました')
+  showToast(site.selected ? '現場を選択しました' : '現場の選択を解除しました')
 }
 
 const searchSlips = () => {
@@ -265,6 +360,12 @@ const showDetail = (slip) => {
 
 const completeReception = () => {
   showToast('受付を完了しました')
+  // 完了後、初期状態に戻す
+  setTimeout(() => {
+    currentStep.value = 1
+    driverForm.value = { company: '', name: '', vehicleType: '', plateNumber: '', weight: 0 }
+    sites.value.forEach(site => site.selected = false)
+  }, 1500)
 }
 </script>
 
@@ -280,59 +381,273 @@ const completeReception = () => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.reception-tabs {
-  display: flex;
-  border-bottom: 1px solid #e2e8f0;
-  background: white;
-  padding: 0 24px;
-}
-
-.tab-btn {
+.card-header {
   padding: 12px 20px;
-  cursor: pointer;
-  font-weight: 500;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h3 {
+  font-weight: bold;
+  color: #1e293b;
+  font-size: 1rem;
+}
+
+/* ステップインジケーター - コンパクト版 */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  min-width: auto;
+  transition: all 0.2s ease;
+}
+
+.step-item.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.step-item.completed {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.step-number {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e2e8f0;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.7rem;
   color: #64748b;
-  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.step-item.active .step-number {
+  background: #3b82f6;
+  color: white;
+}
+
+.step-item.completed .step-number {
+  background: #10b981;
+  color: white;
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.step-title {
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: #1e293b;
+}
+
+.step-desc {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  display: none; /* 説明を非表示にして省スペース */
+}
+
+.step-arrow {
+  color: #cbd5e1;
+  font-size: 0.75rem;
+}
+
+/* 現在のステップ情報バー - コンパクト版 */
+.current-step-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.step-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.step-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.step-name {
+  font-weight: 600;
+  color: #3b82f6;
+  font-size: 0.8rem;
+}
+
+.step-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-bar {
+  width: 80px;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.step-content {
+  padding: 16px 20px;
+}
+
+/* ステップコンテンツヘッダー - コンパクト版 */
+.step-content-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.step-badge {
+  display: inline-block;
+  width: fit-content;
+  padding: 2px 8px;
+  background: #3b82f6;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.step-content-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.step-content-subtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+  width: 100%;
+  margin-left: 44px; /* step-badge の幅分 */
+}
+
+/* ステップナビゲーションバー */
+.step-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-nav {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
   transition: all 0.2s;
+  border: none;
 }
 
-.tab-btn:hover {
-  color: #3b82f6;
+.btn-nav-back {
+  background: white;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }
 
-.tab-btn.active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
+.btn-nav-back:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
 }
 
-.tab-content {
-  padding: 24px;
+.nav-text {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-style: italic;
 }
 
+.step-actions-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* ドライバー情報フォーム */
 .driver-form {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 20px;
   color: white;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 32px;
+  gap: 24px;
 }
 
 .form-section-left,
 .form-section-right {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .form-label {
@@ -346,11 +661,12 @@ const completeReception = () => {
 
 .form-input,
 .form-select {
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: none;
-  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: white;
   font-size: 0.875rem;
+  color: #1e293b;
 }
 
 .form-input:focus,
@@ -361,14 +677,14 @@ const completeReception = () => {
 
 .company-list,
 .name-list {
-  background: rgba(254, 202, 202, 0.8);
+  background: rgba(254, 202, 202, 0.9);
   color: #991b1b;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
   font-size: 0.75rem;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .weight-input {
@@ -378,74 +694,175 @@ const completeReception = () => {
 }
 
 .weight-number {
-  width: 120px;
+  width: 100px;
   text-align: right;
+  background: white;
+  color: #1e293b;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 10px 14px;
 }
 
 .weight-unit {
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 24px;
-}
-
-.form-actions.between {
-  justify-content: space-between;
+  margin-top: 20px;
 }
 
 .form-actions.double {
-  gap: 16px;
+  gap: 12px;
   justify-content: flex-start;
 }
 
-.btn-next {
+.btn-primary {
   background: linear-gradient(135deg, #fbbf24, #f59e0b);
   color: #1e293b;
-  padding: 12px 24px;
-  border-radius: 12px;
+  padding: 10px 20px;
+  border-radius: 8px;
   font-weight: 600;
   border: none;
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
 }
 
-.btn-next:hover {
+.btn-primary:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
 }
 
-.btn-back {
-  background: white;
-  border: 1px solid #cbd5e1;
-  padding: 10px 20px;
-  border-radius: 12px;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.2s;
+.btn-next {
+  display: inline-flex;
+  align-items: center;
 }
 
-.btn-back:hover {
+/* 現場選択 */
+.site-selector {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.site-header h3 {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.9rem;
+}
+
+.search-box {
+  position: relative;
+}
+
+.search-box i {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.search-input {
+  padding: 6px 10px 6px 32px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  width: 220px;
+  font-size: 0.875rem;
+}
+
+.site-table,
+.slip-table {
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.data-table th {
   background: #f8fafc;
+  padding: 10px;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.data-table td {
+  padding: 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.data-table tr:hover {
+  background: #f8fafc;
+}
+
+.site-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #3b82f6;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.w-12 {
+  width: 3rem;
+}
+
+/* 入出荷情報 */
+.slip-form {
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .btn-search,
 .btn-print {
   flex: 1;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 10px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  border: none;
+  font-size: 0.875rem;
 }
 
 .btn-search {
   background: #e2e8f0;
   color: #1e293b;
-  border: none;
 }
 
 .btn-search:hover {
@@ -455,27 +872,11 @@ const completeReception = () => {
 .btn-print {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
-  border: none;
 }
 
 .btn-print:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-}
-
-.btn-complete {
-  background: #10b981;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-complete:hover {
-  background: #059669;
 }
 
 .btn-delete-sm {
@@ -510,102 +911,51 @@ const completeReception = () => {
   color: white;
 }
 
-.site-selector {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
-}
-
-.site-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.site-header h3 {
-  font-weight: bold;
-  color: #1e293b;
-}
-
-.search-box {
-  position: relative;
-}
-
-.search-box i {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #94a3b8;
-}
-
-.search-input {
-  padding: 8px 12px 8px 36px;
-  border: 1px solid #cbd5e1;
+.btn-complete {
+  background: #10b981;
+  color: white;
+  padding: 10px 20px;
   border-radius: 8px;
-  width: 240px;
-}
-
-.site-table,
-.slip-table {
-  overflow-x: auto;
-  margin: 20px 0;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.data-table th {
-  background: #f8fafc;
-  padding: 12px;
-  text-align: left;
   font-weight: 600;
-  color: #475569;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.data-table td {
-  padding: 12px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.data-table tr:hover {
-  background: #f8fafc;
-}
-
-.site-checkbox {
-  width: 18px;
-  height: 18px;
+  border: none;
   cursor: pointer;
-  accent-color: #3b82f6;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
 }
 
-.slip-form {
-  background: #f8fafc;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
+.btn-complete:hover {
+  background: #059669;
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 20px;
+.detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.action-group-left,
+.action-group-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.action-group-right {
+  margin-left: auto;
 }
 
 .font-mono {
   font-family: monospace;
 }
 
-.text-center {
-  text-align: center;
-}
+.mr-1 { margin-right: 0.25rem; }
+.mr-2 { margin-right: 0.5rem; }
+.ml-2 { margin-left: 0.5rem; }
 
 @keyframes fadeIn {
   from {
