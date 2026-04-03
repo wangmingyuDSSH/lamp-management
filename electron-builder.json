@@ -27,7 +27,7 @@
         "arch": ["x64"]
       }
     ],
-    "icon": "public/logo.png",
+    "icon": "public/LampLogo_2.png",
     "publisherName": "Your Company"
   },
   "mac": {
@@ -37,7 +37,7 @@
         "arch": ["x64", "arm64"]
       }
     ],
-    "icon": "public/logo.png",
+    "icon": "public/LampLogo_2.png",
     "category": "public.app-category.business"
   },
   "linux": {
@@ -47,7 +47,7 @@
         "arch": ["x64"]
       }
     ],
-    "icon": "public/logo.png",
+    "icon": "public/LampLogo_2.png",
     "category": "Office"
   },
   "nsis": {
@@ -56,9 +56,9 @@
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "LAMP管理システム",
-    "installerIcon": "public/logo.png",
-    "uninstallerIcon": "public/logo.png",
-    "installerHeaderIcon": "public/logo.png"
+    "installerIcon": "public/LampLogo_2.png",
+    "uninstallerIcon": "public/LampLogo_2.png",
+    "installerHeaderIcon": "public/LampLogo_2.png"
   },
   "portable": {
     "artifactName": "LAMP管理システム-便携版-${version}-${arch}.${ext}"

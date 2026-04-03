@@ -5,7 +5,7 @@
         <div class="logo-icon-wrapper">
           <img 
             class="main-logo-img" 
-            src="/logo.png" 
+            src="/LampLogo_2.png" 
             alt="Lamp"
             @error="handleLogoError"
           />
